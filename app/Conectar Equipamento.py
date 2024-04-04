@@ -77,6 +77,8 @@ def update_status():
     with row5[0]:
         st.write("Status da Comunicação:", st.session_state.acquisition_status)
 
+# TODO: handling quando o usuário conecta na porta errada
+# TODO: lidar com quando o usuário dá um F5 na página e a conexão fica ativa
 def connect_serial():
     try:
         # Tentar conectar à porta serial

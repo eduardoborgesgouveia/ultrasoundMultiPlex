@@ -37,31 +37,25 @@ def retorna_plotagens(data,temp,condicao,offset):
     return media_mediana
        
 if __name__ == '__main__':
+    # temperaturas = [0,1,2,3,4,5,6,7,8,9] # Quantidade de temperaturas para leitura
+    # # Importação dos dados:
+    # media_mediana = go.Figure()
+    # for ii in range(len(temperaturas)):
+    #     data = np.load("C:\\Users\\Larissa\\OneDrive\\Larissa\\LMEst\\Ultrassom\\Ensaios com ultrassom\\Viga Bia\\2023\\Corte 1\\Normal\\Resultados\\0-p" + str(temperaturas[ii]) + ".npy")
+     
+    #     condicao = 0
+    #     offset = 29
+    #     media_mediana = retorna_plotagens(data,temperaturas[ii],condicao,offset)
 
-    temperaturas = [0,1,2,3,4,5,6,7,8,9] # Quantidade de temperaturas para leitura
-    
+    # media_mediana.update_layout(title="Plotagem das medianas",xaxis_title="Posição (mm)",yaxis_title="dB (%)")
+    # media_mediana.show()
 
-
-
-    # Importação dos dados:
 
     media_mediana = go.Figure()
-
-
-    for ii in range(len(temperaturas)):
-
-        data = np.load("C:\\Users\\Larissa\\OneDrive\\Larissa\\LMEst\\Ultrassom\\Ensaios com ultrassom\\Viga Bia\\2023\\Corte 1\\Normal\\Resultados\\0-p" + str(temperaturas[ii]) + ".npy")
-     
-
-    
-       
-        condicao = 0
-        offset = 29
-        media_mediana = retorna_plotagens(data,temperaturas[ii],condicao,offset)
-
-    
-
-
+    data = np.load('C:\\Users\\lmest\\Videos\\video_teste.npy')
+    condicao = 0
+    offset = 0
+    media_mediana = retorna_plotagens(data,0,condicao,offset)
     media_mediana.update_layout(title="Plotagem das medianas",xaxis_title="Posição (mm)",yaxis_title="dB (%)")
-    media_mediana.show() 
+    media_mediana.show()
     

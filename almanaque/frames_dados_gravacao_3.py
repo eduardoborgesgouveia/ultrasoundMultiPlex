@@ -81,13 +81,14 @@ def dataFromImage(imagePath):
                 data[j] = (data[j-1]+data[j+1])/2
     return data
 
-caminho = "C:\\Users\\Larissa\\OneDrive\\Larissa\\LMEst\\Ultrassom\\Ensaios com ultrassom\\transdutor colado\\"
+caminho = "C:\\Users\\lmest\\Videos\\"
+pasta = "video_teste"
 
 
 
 
 
-path = "C:\\Users\\Larissa\\OneDrive\\Larissa\\LMEst\\Ultrassom\\Ensaios com ultrassom\\transdutor colado\\0-cola7\\"
+path = caminho + pasta + "\\"
 
 
 # Check whether the specified path exists or not
@@ -100,16 +101,15 @@ if not isExist:
  
 
 
-extractImages(caminho+"0-cola7.mp4", caminho+"0-cola7\\")
-
+extractImages(caminho+"video_teste.mp4", caminho+pasta + "\\")
 data = []
-for file in os.listdir(caminho+"0-cola7\\"):
+for file in os.listdir(caminho+pasta):
     filename = os.fsdecode(file)
-    signal = dataFromImage(caminho+"0-cola7\\" +filename)
+    signal = dataFromImage(caminho+pasta +"\\"+filename)
     print ('Exctracting data from ', filename)
     data.append(signal)
     
-np.save(caminho + "0-cola7", data)
+np.save(caminho +pasta, data)
 #for i in range(len(data)):
  #   fig = plt.figure(figsize=(12.8, 7), dpi=100)
  
