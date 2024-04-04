@@ -86,7 +86,7 @@ class conersor():
             signal = conersor._dataFromImage(self.path_img +filename)
             data.append(signal)
             
-        mediana = np.zeros(len(data[0,:]))
+        mediana = np.zeros(len(np.array(data)[0,:]))
         for ii in range(len(data[0,:])):
             mediana[ii] = statistics.median(data[:,ii])
 
