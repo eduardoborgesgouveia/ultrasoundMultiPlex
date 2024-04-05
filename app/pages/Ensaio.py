@@ -14,7 +14,11 @@ if "nome_ensaio" not in st.session_state:
     st.session_state.nome_ensaio = ""
 if "db_connection" not in st.session_state:
     st.session_state.db_connection = None
+if "multiplex_indices" not in st.session_state:
+    st.session_state.multiplex_indices = []
 
+
+## TODO: colocar banco de dados como uma classe
 ## conexão db para salvar os dados
 ## banco sqlite armazenado em db/db.sqlite
 def conect_db():
@@ -27,8 +31,9 @@ def inserir_indice():
     ob_axu = {
         "parametro_tempo": 1000,
         "parametro_canais": 10,
-        "array_dados": pickle.dumps([1,2,3,4,5,6,7,8,9,10])
+        "array_dados": pickle.dumps(st.session_state.multiplex_indices)
     }
+    st.session_state.multiplex_indices = []
     conn = conect_db()
     cursor = conn.cursor()
     try:
@@ -83,7 +88,7 @@ def inserir_ensaio(descricao, id_indice, caminho_arquivo, sinal, observacao):
 def salvar_dados(path, sinal, observacao):
     status, id_indice = inserir_indice()
     if status:
-        status, id_ensaio = inserir_ensaio(st.session_state.nome_ensaio, id_indice, "caminho", [1,2,3,4,5,6,7,8,9,10], "observacao")
+        status, id_ensaio = inserir_ensaio(st.session_state.nome_ensaio, id_indice, path, sinal, observacao)
         if status:
             st.success("Dados salvos com sucesso")
         else:
@@ -136,12 +141,15 @@ TIMEOUT = 30
 # TODO: criar uma variavel de observação para armazenar se todo o processo foi ok ou se saiu pelo timeout etc.
 if st.button("Iniciar Gravação"):
     start_record(conect_obs_socket())
-    idx_inicial = st.session_state.data_multiplex_received_queue[-1]
+    st.session_state.multiplex_indices.append(st.session_state.data_multiplex_received_queue[-1])
     with st.spinner('Lendo dados...'):
         # TODO: colocar o sleep como um valor baseado no tempo de leitura dos dados configurado na tela de conectar equipamento
+        # TODO: verificar esse multiplex_indices -> não funcionando
+        # TODO: separar o vídeo por canais e salvar os dados separados
         time.sleep(2)
         start_time = time.time()
-        while st.session_state.data_multiplex_received_queue[-1] != idx_inicial:
+        while st.session_state.data_multiplex_received_queue[-1] != st.session_state.multiplex_indices[0]:
+            st.session_state.multiplex_indices.append(st.session_state.data_multiplex_received_queue[-1])
             if time.time() - start_time > TIMEOUT:
                 st.error("Erro ao iniciar gravação")
                 break
