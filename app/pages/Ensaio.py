@@ -14,8 +14,8 @@ if "nome_ensaio" not in st.session_state:
     st.session_state.nome_ensaio = ""
 if "db_connection" not in st.session_state:
     st.session_state.db_connection = None
-if "multiplex_indices" not in st.session_state:
-    st.session_state.multiplex_indices = []
+if "multiplex_indices_time" not in st.session_state:
+    st.session_state.multiplex_indices_time = []
 
 
 ## TODO: colocar banco de dados como uma classe
@@ -27,13 +27,24 @@ def conect_db():
     return conn
 
 def inserir_indice():
-    # TODO: pegar os parametros do ensaio
-    ob_axu = {
-        "parametro_tempo": 1000,
-        "parametro_canais": 10,
-        "array_dados": pickle.dumps(st.session_state.multiplex_indices)
+    # pegar os dados do data_multiplex_received_queue que estejam entre os tempos de inicio e fim do multiplex_indices_time
+    array_dados = []
+    ti = st.session_state.multiplex_indices_time[0]
+    tf = st.session_state.multiplex_indices_time[-1]
+    for idx, ob in enumerate(st.session_state.data_multiplex_received_queue):
+        if ti <= ob['tempo'] and ob['tempo'] <= tf:
+            array_dados.append(st.session_state.data_multiplex_received_queue[idx])
+    ob_ind = {
+        "ti": ti,
+        "tf": tf,
+        "array_dados": array_dados
     }
-    st.session_state.multiplex_indices = []
+    ob_axu = {
+        "parametro_tempo": st.session_state.tempo_sensor,
+        "parametro_canais": st.session_state.quantidade_sensor,
+        "array_dados": pickle.dumps(ob_ind)
+    }
+    st.session_state.multiplex_indices_time = []
     conn = conect_db()
     cursor = conn.cursor()
     try:
@@ -61,7 +72,7 @@ def inserir_ensaio(descricao, id_indice, caminho_arquivo, sinal, observacao):
         "sinal": pickle.dumps(sinal),
         "observacao": observacao,
         "data_criacao": datetime.now(),
-        "descricao": descricao,
+        "descricao": descricao if descricao else "Sem descrição",
         "id_indice": id_indice
     }
 
@@ -141,17 +152,17 @@ TIMEOUT = 30
 # TODO: criar uma variavel de observação para armazenar se todo o processo foi ok ou se saiu pelo timeout etc.
 if st.button("Iniciar Gravação"):
     start_record(conect_obs_socket())
-    st.session_state.multiplex_indices.append(st.session_state.data_multiplex_received_queue[-1])
+    start_time = time.time()
+    st.session_state.multiplex_indices_time.append(time.time())
+    aux_multiplex = st.session_state.data_multiplex_received_queue[-1]['valor'] +1 if st.session_state.data_multiplex_received_queue[-1]['valor'] != st.session_state.quantidade_sensor else 1
     with st.spinner('Lendo dados...'):
-        # TODO: colocar o sleep como um valor baseado no tempo de leitura dos dados configurado na tela de conectar equipamento
-        # TODO: verificar esse multiplex_indices -> não funcionando
         # TODO: separar o vídeo por canais e salvar os dados separados
-        time.sleep(2)
-        start_time = time.time()
-        while st.session_state.data_multiplex_received_queue[-1] != st.session_state.multiplex_indices[0]:
-            st.session_state.multiplex_indices.append(st.session_state.data_multiplex_received_queue[-1])
+        # talvez gerar um objeto gigante com vários sinais pra não mexer no banco
+        time.sleep((st.session_state.tempo_sensor)/1000)
+        while time.time() - start_time <= (st.session_state.tempo_sensor/1000)* st.session_state.quantidade_sensor + 1:
+            st.session_state.multiplex_indices_time.append(time.time())
             if time.time() - start_time > TIMEOUT:
-                st.error("Erro ao iniciar gravação")
+                st.error("Erro ao sincronizar gravação com sensores")
                 break
             pass
         path = stop_record(conect_obs_socket())
@@ -161,11 +172,11 @@ if st.button("Iniciar Gravação"):
 
 
 
-
 if st.button("Parar Gravação"):
     stop_record(conect_obs_socket())
     st.error("Gravação interrompida")
 st.write("Status da Gravação:", "Gravando" if st.session_state.recording else "Não Gravando")
+
     
 
 

@@ -49,14 +49,14 @@ cur = con.cursor()
 result_query = [
     list(row) for row in cur.execute(
         '''
-        SELECT id, descricao, sinal, data_criacao,observacao FROM ensaios  ORDER BY id
+        SELECT id, descricao, sinal, data_criacao,observacao,indices_id FROM ensaios  ORDER BY id
         '''
     )
 ]
 
 df = pd.DataFrame(
     result_query,
-    columns=['id','Descrição', 'Sinal', 'Data de Criação', 'Observação'])
+    columns=['id','Descrição', 'Sinal', 'Data de Criação', 'Observação','Indices_id'])
 
 with st.container():
     st.markdown("# Ensaios #")            
@@ -88,7 +88,7 @@ with st.container():
             for select in selected_rows:
                 ensaios.append(select['id'])
                 forcas.append(get_sinal(df,select['id']))
-                legenda.append(selected_rows[0]['Descrição'])
+                legenda.append(select['Descrição'])
             
             dados = np.array(forcas, dtype=object)                                
             group_labels = [ensaios[:][:]]
@@ -109,6 +109,8 @@ with st.container():
         with informacoes:
             st.header("A dog")
             df_indices = get_indices()
-            array_selected = pickle.loads(df_indices[df_indices['id'] == 6]['array_valores'][df_indices[df_indices['id'] == 6]['array_valores'].index[0]])
-            st.text(array_selected)
+            for select in selected_rows:
+                indice_id = df.loc[df['id'] == select['id'],'Indices_id'].values[0]
+                array_selected = pickle.loads(df_indices[df_indices['id'] == indice_id]['array_valores'][df_indices[df_indices['id'] == indice_id]['array_valores'].index[0]])
+                st.text(array_selected)
             st.image("https://static.streamlit.io/examples/dog.jpg", width=200)

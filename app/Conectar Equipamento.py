@@ -21,6 +21,10 @@ if "last_acquisition_status" not in st.session_state:
     st.session_state.last_acquisition_status = "Sem comunicação"
 if "data_multiplex_received_queue" not in st.session_state:
     st.session_state.data_multiplex_received_queue = []
+if "tempo_sensor" not in st.session_state:
+    st.session_state.tempo_sensor = 0
+if "quantidade_sensor" not in st.session_state:
+    st.session_state.quantidade_sensor = 0
 
 
 
@@ -39,8 +43,9 @@ def monitor_serial():
             st.session_state.acquisition_status = "Sem comunicação"
             st.session_state.data_multiplex_received_queue = []
         elif received_data.isdigit():
-            st.session_state.data_multiplex_received_queue.append(received_data)
-            if len(st.session_state.data_multiplex_received_queue) > 10:
+            # add a pair of timestamp and received data to the data_multiplex_received_queue
+            st.session_state.data_multiplex_received_queue.append({'tempo':time.time(), 'valor':int(received_data)})
+            if len(st.session_state.data_multiplex_received_queue) > 500:
                 st.session_state.data_multiplex_received_queue = st.session_state.data_multiplex_received_queue[1:]
             st.session_state.acquisition_status = "Em andamento"
         if st.session_state.last_acquisition_status != st.session_state.acquisition_status:
@@ -150,8 +155,15 @@ if st.session_state.connection_status == "Conectado":
     with row3[1]:
         st.markdown("#")
         if st.button("Enviar"):
-            send_data(st.session_state.serial_port, data_to_send)
-            update_status()
+            tempo = data_to_send.split(",")[0]
+            quantidade = data_to_send.split(",")[1]
+            if tempo.isdigit() and quantidade.isdigit():
+                st.session_state.tempo_sensor = int(tempo)
+                st.session_state.quantidade_sensor = int(quantidade)
+                send_data(st.session_state.serial_port, data_to_send)
+                update_status()
+            else:
+                st.error("Digite um valor numérico válido. Formato <<tempo,quantidade>>")
 
 
 
