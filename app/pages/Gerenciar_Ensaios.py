@@ -86,22 +86,21 @@ with st.container():
             st.session_state.ensaio_id = selected_rows[0]['id']                
             st.markdown(f":orange[{st.session_state.ensaio_id}]")                
             for select in selected_rows:
-                ensaios.append(select['id'])
+                ensaios.append(select['Descrição'])
                 forcas.append(get_sinal(df,select['id']))
                 legenda.append(select['Descrição'])
             
-            dados = np.array(forcas, dtype=object)                                
             group_labels = [ensaios[:][:]]
-            dados = dados.transpose()
-            rs = np.arange(1, len(forcas[0]), 1)
-            fig = make_subplots(rows=1, cols=1)
+            fig = make_subplots(rows=10, cols=1)
+            #TODO: ver como organizar os gráficos
 
             for i in range (len(selected_rows)):
                 if len(selected_rows) > 0:
-                    fig.append_trace(go.Scatter(                        
-                        y=forcas[i][:],name=group_labels[0][i]
-                        ), row=1, col=1
-                    )
+                    for j in forcas[i]:
+                        fig.append_trace(go.Scatter(                        
+                            y=j,name=group_labels[0][i]
+                            ), row=1, col=1
+                        )
             fig = fig.update_layout(showlegend=True)
             st.plotly_chart(fig, theme="streamlit", use_container_width=True)
 

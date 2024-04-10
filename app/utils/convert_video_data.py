@@ -10,26 +10,29 @@ import imageio
 import cv2
 
 class conersor():
-    def __init__(self, _path_video):
+    def __init__(self, _path_video,_indices,_tempo_sensor):
         self.path_video = _path_video.replace("/", "\\")
         self.pasta_img = self.path_video.split("\\")[-1].split(".")[0]
         self.path_img = self.path_video.replace(self.pasta_img+".mp4", "img_"+self.pasta_img) + "\\"
+        self.indices = _indices
+        self.tempo_sensor = _tempo_sensor
 
         if not os.path.exists(self.path_img):
             os.makedirs(self.path_img)
     
-    def _extractImages(pathIn, pathOut):
+    def _extractImages(pathIn, pathOut, indices,janela_tempo):
+        tempo_primeiro_indice = (indices['array_dados'][0]['tempo'] - indices['ti'])*1000
         count = 0
         vidcap = cv2.VideoCapture(pathIn)
         success,image = vidcap.read()
         success = True
         while success:
-            vidcap.set(cv2.CAP_PROP_POS_MSEC,(count*500))    # added this line time in miliseconds
+            vidcap.set(cv2.CAP_PROP_POS_MSEC,(tempo_primeiro_indice + count))    # added this line time in miliseconds
             success,image = vidcap.read()
             print ('Read a new frame: ', success)
             if success:
                 cv2.imwrite( pathOut + "frame" + str(count).zfill(4)+".jpg", image)     # save frame as JPEG file
-                count = count + 1
+                count = count + janela_tempo
 
     def _dataFromImage(imagePath):
         img = imageio.imread(imagePath)
@@ -79,7 +82,8 @@ class conersor():
         return data
     
     def convert(self):
-        conersor._extractImages(self.path_video, self.path_img)
+
+        conersor._extractImages(self.path_video, self.path_img, self.indices,self.tempo_sensor)
         data = []
         for file in os.listdir(self.path_img):
             filename = os.fsdecode(file)
@@ -87,11 +91,11 @@ class conersor():
             data.append(signal)
         
         data = np.array(data)
-        mediana = np.zeros(len(data[0,:]))
-        for ii in range(len(data[0,:])):
-            mediana[ii] = statistics.median(data[:,ii])
+        # mediana = np.zeros(len(data[0,:]))
+        # for ii in range(len(data[0,:])):
+        #     mediana[ii] = statistics.median(data[:,ii])
 
-        return mediana
+        return data
 
 
 

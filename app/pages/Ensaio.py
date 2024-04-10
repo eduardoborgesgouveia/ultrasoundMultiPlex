@@ -16,6 +16,8 @@ if "db_connection" not in st.session_state:
     st.session_state.db_connection = None
 if "multiplex_indices_time" not in st.session_state:
     st.session_state.multiplex_indices_time = []
+if "array_dados_indices" not in st.session_state:
+    st.session_state.array_dados_indices = None
 
 
 ## TODO: colocar banco de dados como uma classe
@@ -28,17 +30,7 @@ def conect_db():
 
 def inserir_indice():
     # pegar os dados do data_multiplex_received_queue que estejam entre os tempos de inicio e fim do multiplex_indices_time
-    array_dados = []
-    ti = st.session_state.multiplex_indices_time[0]
-    tf = st.session_state.multiplex_indices_time[-1]
-    for idx, ob in enumerate(st.session_state.data_multiplex_received_queue):
-        if ti <= ob['tempo'] and ob['tempo'] <= tf:
-            array_dados.append(st.session_state.data_multiplex_received_queue[idx])
-    ob_ind = {
-        "ti": ti,
-        "tf": tf,
-        "array_dados": array_dados
-    }
+    ob_ind = st.session_state.array_dados_indices
     ob_axu = {
         "parametro_tempo": st.session_state.tempo_sensor,
         "parametro_canais": st.session_state.quantidade_sensor,
@@ -109,7 +101,7 @@ def salvar_dados(path, sinal, observacao):
 
 
 def processa_dados(path):
-    sinal = conersor(path).convert()
+    sinal = conersor(path,st.session_state.array_dados_indices,st.session_state.tempo_sensor).convert()
     salvar_dados(path, sinal, "observacao")
     return path
 
@@ -168,6 +160,18 @@ if st.button("Iniciar Gravação"):
         path = stop_record(conect_obs_socket())
         st.success("Gravação finalizada")
         with st.spinner("Processando dados..."):
+            array_dados = []
+            ti = st.session_state.multiplex_indices_time[0]
+            tf = st.session_state.multiplex_indices_time[-1]
+            for idx, ob in enumerate(st.session_state.data_multiplex_received_queue):
+                if ti <= ob['tempo'] and ob['tempo'] <= tf:
+                    array_dados.append(st.session_state.data_multiplex_received_queue[idx])
+            ob_ind = {
+                "ti": ti,
+                "tf": tf,
+                "array_dados": array_dados
+            }
+            st.session_state.array_dados_indices = ob_ind
             processa_dados(path)
 
 
