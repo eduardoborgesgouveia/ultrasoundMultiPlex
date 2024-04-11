@@ -6,6 +6,7 @@ import serial.tools.list_ports
 from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
 from utils.threadHandler import ThreadHandler
 
+st.set_page_config(layout='wide')
 
 if "connection_status" not in st.session_state:
     st.session_state.connection_status = "Desconectado"
@@ -102,7 +103,7 @@ with row1[0]:
     st.markdown("#")
 
 # Baudrates possíveis
-baudrates = [9600, 19200, 38400, 57600, 115200]  # Adicione as baudrates necessárias
+baudrates = [115200]  # Adicione as baudrates necessárias
 with row1[1]:
     selected_baudrate = st.selectbox("Selecione a baudrate:", baudrates)
     st.markdown("#")

@@ -7,6 +7,10 @@ import numpy as np
 import obsws_python as obs
 from utils.convert_video_data import conersor
 
+
+st.set_page_config(layout='wide')
+
+
 if "recording" not in st.session_state:
     st.session_state.recording = False
 
@@ -18,6 +22,11 @@ if "multiplex_indices_time" not in st.session_state:
     st.session_state.multiplex_indices_time = []
 if "array_dados_indices" not in st.session_state:
     st.session_state.array_dados_indices = None
+if "status_conexao_obs" not in st.session_state:
+    st.session_state.status_conexao_obs = False
+if "observacao" not in st.session_state:
+    st.session_state.observacao = "Sem observação"
+
 
 
 ## TODO: colocar banco de dados como uma classe
@@ -93,16 +102,16 @@ def salvar_dados(path, sinal, observacao):
     if status:
         status, id_ensaio = inserir_ensaio(st.session_state.nome_ensaio, id_indice, path, sinal, observacao)
         if status:
-            st.success("Dados salvos com sucesso")
+            atualiza_status_gravacao("Dados salvos com sucesso",True)
         else:
-            st.error("Erro ao salvar os dados")
+            atualiza_status_gravacao("Erro ao salvar os dados",False)
     else:
-        st.error("Erro ao salvar os dados")
+        atualiza_status_gravacao("Erro ao salvar os dados",False)
 
 
 def processa_dados(path):
     sinal = conersor(path,st.session_state.array_dados_indices,st.session_state.tempo_sensor).convert()
-    salvar_dados(path, sinal, "observacao")
+    salvar_dados(path, sinal, st.session_state.observacao)
     return path
 
 
@@ -115,8 +124,10 @@ def conect_obs_socket():
     # Access it's field as an attribute
     print(f"OBS Version: {resp.obs_version}")
     if resp.obs_version:
+        st.session_state.status_conexao_obs = True
         return cl
     else:
+        st.session_state.status_conexao_obs = False
         st.error("Falha no OBS")
         return None
     
@@ -130,57 +141,82 @@ def stop_record(cl):
     st.session_state.recording = False
     return filename.output_path
 
-st.title("Ensaio")
+row0 = st.columns(1)
+row1 = st.columns(1)
+row2 = st.columns(4)
+row3 = st.columns(1)
+row5 = st.columns(1)
 
-# colocar um campo de texto para o usuário colocar o nome do ensaio
-# colocar um botão para iniciar a gravação
-# colocar um botão para parar a gravação
-# mostrar o status da gravação
 
-st.session_state.nome_ensaio = st.text_input("Nome do Ensaio:")
-TIMEOUT = 30
-# TODO: verificar se a conexão com o equipamento está ativa e coletando 
-# TODO: verificar se a conexão com o OBS está ativa
-# TODO: criar uma variavel de observação para armazenar se todo o processo foi ok ou se saiu pelo timeout etc.
-if st.button("Iniciar Gravação"):
-    start_record(conect_obs_socket())
-    start_time = time.time()
-    st.session_state.multiplex_indices_time.append(time.time())
-    aux_multiplex = st.session_state.data_multiplex_received_queue[-1]['valor'] +1 if st.session_state.data_multiplex_received_queue[-1]['valor'] != st.session_state.quantidade_sensor else 1
-    with st.spinner('Lendo dados...'):
-        # TODO: separar o vídeo por canais e salvar os dados separados
-        # talvez gerar um objeto gigante com vários sinais pra não mexer no banco
-        time.sleep((st.session_state.tempo_sensor)/1000)
-        while time.time() - start_time <= (st.session_state.tempo_sensor/1000)* st.session_state.quantidade_sensor + 1:
-            st.session_state.multiplex_indices_time.append(time.time())
-            if time.time() - start_time > TIMEOUT:
-                st.error("Erro ao sincronizar gravação com sensores")
-                break
-            pass
-        path = stop_record(conect_obs_socket())
-        st.success("Gravação finalizada")
-        with st.spinner("Processando dados..."):
-            array_dados = []
-            ti = st.session_state.multiplex_indices_time[0]
-            tf = st.session_state.multiplex_indices_time[-1]
-            for idx, ob in enumerate(st.session_state.data_multiplex_received_queue):
-                if ti <= ob['tempo'] and ob['tempo'] <= tf:
-                    array_dados.append(st.session_state.data_multiplex_received_queue[idx])
-            ob_ind = {
-                "ti": ti,
-                "tf": tf,
-                "array_dados": array_dados
-            }
-            st.session_state.array_dados_indices = ob_ind
-            processa_dados(path)
+def atualiza_label_status():
+    with row3[0]:
+        st.write("Status da Gravação:", "Gravando" if st.session_state.recording else "Não Gravando")
+
+def atualiza_status_gravacao(string,flag):
+    with row5[0]:
+        if flag:
+            st.success(string)
+        else:
+            st.error(string)
+            st.session_state.observacao = string
 
 
 
-if st.button("Parar Gravação"):
-    stop_record(conect_obs_socket())
-    st.error("Gravação interrompida")
-st.write("Status da Gravação:", "Gravando" if st.session_state.recording else "Não Gravando")
+with row0[0]:
+    st.title("Ensaio")
 
-    
+with row1[0]:
+    st.session_state.nome_ensaio = st.text_input("Nome do Ensaio:")
+
+TIMEOUT = 20
+conect_obs_socket()
+
+
+if st.session_state.connection_status == "Conectado" and st.session_state.status_conexao_obs:
+    with row2[0]:
+        if st.button("Iniciar Gravação"):
+            if not st.session_state.recording:
+                start_record(conect_obs_socket())
+                start_time = time.time()
+                st.session_state.multiplex_indices_time.append(time.time())
+                aux_multiplex = st.session_state.data_multiplex_received_queue[-1]['valor'] +1 if st.session_state.data_multiplex_received_queue[-1]['valor'] != st.session_state.quantidade_sensor else 1
+                with st.spinner('Lendo dados...'):
+                    time.sleep((st.session_state.tempo_sensor)/1000)
+                    while time.time() - start_time <= (st.session_state.tempo_sensor/1000)* st.session_state.quantidade_sensor + 1:
+                        st.session_state.multiplex_indices_time.append(time.time())
+                        if time.time() - start_time > TIMEOUT:
+                            atualiza_status_gravacao("Erro ao sincronizar gravação com sensores", False)
+                            break
+                        pass
+                    path = stop_record(conect_obs_socket())
+                    atualiza_status_gravacao("Gravação finalizada", True)
+                with st.spinner("Processando dados..."):
+                    array_dados = []
+                    ti = st.session_state.multiplex_indices_time[0]
+                    tf = st.session_state.multiplex_indices_time[-1]
+                    for idx, ob in enumerate(st.session_state.data_multiplex_received_queue):
+                        if ti <= ob['tempo'] and ob['tempo'] <= tf:
+                            array_dados.append(st.session_state.data_multiplex_received_queue[idx])
+                    ob_ind = {
+                        "ti": ti,
+                        "tf": tf,
+                        "array_dados": array_dados
+                    }
+                    st.session_state.array_dados_indices = ob_ind
+                    processa_dados(path)
+
+
+    with row2[1]:
+        if st.button("Parar Gravação"):
+            if st.session_state.recording:
+                stop_record(conect_obs_socket())
+                atualiza_status_gravacao("Gravação interrompida",False)
+
+else:
+    if st.session_state.connection_status != "Conectado":
+        st.error("Verificar conexão com o equipamento")
+    elif not st.session_state.status_conexao_obs:
+        st.error("Verificar se o OBS está ativo e configurado corretamente")
+
 
 

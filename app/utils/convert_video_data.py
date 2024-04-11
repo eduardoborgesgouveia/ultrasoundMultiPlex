@@ -21,18 +21,23 @@ class conersor():
             os.makedirs(self.path_img)
     
     def _extractImages(pathIn, pathOut, indices,janela_tempo):
-        tempo_primeiro_indice = (indices['array_dados'][0]['tempo'] - indices['ti'])*1000
+        tempo_primeiro_indice = (indices['array_dados'][0]['tempo'] - indices['ti'])
+        max_signals = len(indices['array_dados'])
+        FRAMES_SEC = 30
+        frame_index = int(tempo_primeiro_indice * FRAMES_SEC)
         count = 0
         vidcap = cv2.VideoCapture(pathIn)
-        success,image = vidcap.read()
+        # success,image = vidcap.read()
         success = True
-        while success:
-            vidcap.set(cv2.CAP_PROP_POS_MSEC,(tempo_primeiro_indice + count))    # added this line time in miliseconds
+        i = 0
+        while success and i<max_signals:
+            vidcap.set(cv2.CAP_PROP_POS_FRAMES ,(frame_index + count))    # added this line time in miliseconds
             success,image = vidcap.read()
             print ('Read a new frame: ', success)
             if success:
                 cv2.imwrite( pathOut + "frame" + str(count).zfill(4)+".jpg", image)     # save frame as JPEG file
-                count = count + janela_tempo
+                count = int(count + (janela_tempo/1000*FRAMES_SEC))
+                i = i + 1
 
     def _dataFromImage(imagePath):
         img = imageio.imread(imagePath)

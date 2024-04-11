@@ -15,8 +15,7 @@ st.set_page_config(layout='wide')
 if "ensaio_id" not in st.session_state:
     st.session_state.ensaio_id = None
 
-# TODO: alterar o nome para sinais
-forcas  = []
+sinais  = []
 
 def conect_db():
     # conecta com o banco de dados
@@ -24,48 +23,52 @@ def conect_db():
     return conn
 
 
-def get_sinal(df,id):
-    sinal = pickle.loads(df[df['id'] == id]['Sinal'][df[df['id'] == id]['Sinal'].index[0]])
-    return sinal
-
-def get_indices():
-    con = conect_db()
-    cur = con.cursor()    
-    result_query = [
-        list(row) for row in cur.execute(
-            '''
-            SELECT id, parametro_tempo, parametro_canais, array_valores FROM indices  ORDER BY id
-            '''
-        )
-    ]
-
-    df = pd.DataFrame(
-        result_query,
-        columns=['id','Tempo', 'Canais','array_valores'])
-    return df
 
 con = conect_db()
 cur = con.cursor()    
 result_query = [
     list(row) for row in cur.execute(
         '''
-        SELECT id, descricao, sinal, data_criacao,observacao,indices_id FROM ensaios  ORDER BY id
+        SELECT ensaios.id, descricao, sinal, data_criacao,observacao,indices_id,  parametro_tempo, parametro_canais, array_valores
+        FROM ensaios  
+        LEFT JOIN indices ON ensaios.indices_id = indices.id
+        ORDER BY ensaios.id
         '''
     )
 ]
 
+
 df = pd.DataFrame(
     result_query,
-    columns=['id','Descrição', 'Sinal', 'Data de Criação', 'Observação','Indices_id'])
+    columns=['id','Descrição', 'Sinal', 'Data de Criação', 'Observação','Indices_id', 'Tempo', 'Canais','array_valores'])
+
+for row in df.iterrows():
+    df.at[row[0],'array_valores'] = pickle.loads(row[1]['array_valores'])['array_dados']
+    df.at[row[0],'Sinal'] = pickle.loads(row[1]['Sinal'])
+    # verifica o menor array entre sinal e array_valores e diminui o maior para o tamanho do menor
+    min_len = min(len(df.at[row[0],'Sinal']), len(df.at[row[0],'array_valores']))
+    df.at[row[0],'Sinal'] = df.at[row[0],'Sinal'][:min_len]
+    df.at[row[0],'array_valores'] = df.at[row[0],'array_valores'][:min_len]
+
+    df.at[row[0],'ti'] = pickle.loads(row[1]['array_valores'])['ti']
+    df.at[row[0],'tf'] = pickle.loads(row[1]['array_valores'])['tf']
+
+df = df.explode(['Sinal','array_valores'])
+
+# criar uma coluna de identificador chamada "descricao_tabela" contendo o nome do ensaio e o canal
+df['descricao_tabela'] = df['Descrição'] + " - canal: " + df['array_valores'].apply(lambda x: str(x['valor']))
+
+
+
 
 with st.container():
     st.markdown("# Ensaios #")            
-    gb = GridOptionsBuilder.from_dataframe(df[["Descrição", "Data de Criação", "Observação"]])                        
-    gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=15)            
+    gb = GridOptionsBuilder.from_dataframe(df[["descricao_tabela", "Data de Criação", "Observação"]])                        
+    gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=50)            
     gb.configure_selection(selection_mode="multiple", use_checkbox=True)
     gridOptions = gb.build()
 
-    data = AgGrid(df[['id','Descrição', 'Data de Criação', 'Observação']],
+    data = AgGrid(df[['id','descricao_tabela', 'Sinal', 'Data de Criação', 'Observação','Indices_id', 'Tempo', 'Canais','array_valores']],
                 gridOptions=gridOptions,
                 enable_enterprise_modules=True,
                 allow_unsafe_jscode=True,
@@ -84,32 +87,27 @@ with st.container():
         dados = []            
         if (len(selected_rows) != 0):        
             st.session_state.ensaio_id = selected_rows[0]['id']                
-            st.markdown(f":orange[{st.session_state.ensaio_id}]")                
+            # st.markdown(f":orange[{st.session_state.ensaio_id}]")                
             for select in selected_rows:
-                ensaios.append(select['Descrição'])
-                forcas.append(get_sinal(df,select['id']))
-                legenda.append(select['Descrição'])
+                ensaios.append(select['descricao_tabela'])
+                sinais.append(select['Sinal'])
+                legenda.append(select['descricao_tabela'])
             
             group_labels = [ensaios[:][:]]
-            fig = make_subplots(rows=10, cols=1)
-            #TODO: ver como organizar os gráficos
+            fig = make_subplots(rows=1, cols=1)
 
             for i in range (len(selected_rows)):
                 if len(selected_rows) > 0:
-                    for j in forcas[i]:
-                        fig.append_trace(go.Scatter(                        
-                            y=j,name=group_labels[0][i]
-                            ), row=1, col=1
-                        )
+                    fig.append_trace(go.Scatter(                        
+                        y=sinais[i][:],name=group_labels[0][i]
+                        ), row=1, col=1
+                    )
             fig = fig.update_layout(showlegend=True)
             st.plotly_chart(fig, theme="streamlit", use_container_width=True)
 
         #TODO: adicionar as infos do ensaio
         with informacoes:
             st.header("A dog")
-            df_indices = get_indices()
             for select in selected_rows:
-                indice_id = df.loc[df['id'] == select['id'],'Indices_id'].values[0]
-                array_selected = pickle.loads(df_indices[df_indices['id'] == indice_id]['array_valores'][df_indices[df_indices['id'] == indice_id]['array_valores'].index[0]])
-                st.text(array_selected)
+                st.text(select['array_valores'])
             st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
