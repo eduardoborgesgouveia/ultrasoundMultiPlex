@@ -107,7 +107,14 @@ with st.container():
 
         #TODO: adicionar as infos do ensaio
         with informacoes:
-            st.header("A dog")
+            # st.header("A dog")
             for select in selected_rows:
-                st.text(select['array_valores'])
-            st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
+                st.markdown("-----------------------------")
+                st.markdown("Ensaio: " + select['descricao_tabela'])
+                st.markdown("Quantidade de canais: " + str(select['Canais']))
+                st.markdown("Tempo em cada canal: "+ str(select["Tempo"]))
+                st.markdown("Data do ensaio: "+ pd.to_datetime(select["Data de Criação"]).strftime("%d/%m/%Y %H:%M:%S"))
+                st.markdown("Observação: "+select["Observação"])
+
+                # st.text(select['array_valores'])
+            # st.image("https://static.streamlit.io/examples/dog.jpg", width=200)

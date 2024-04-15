@@ -29,7 +29,7 @@ if "observacao" not in st.session_state:
 
 
 
-## TODO: colocar banco de dados como uma classe
+
 ## conexão db para salvar os dados
 ## banco sqlite armazenado em db/db.sqlite
 def conect_db():

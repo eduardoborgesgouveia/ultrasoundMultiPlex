@@ -5,6 +5,7 @@ import serial
 import serial.tools.list_ports
 from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
 from utils.threadHandler import ThreadHandler
+import pickle
 
 st.set_page_config(layout='wide')
 
@@ -83,8 +84,6 @@ def update_status():
     with row5[0]:
         st.write("Status da Comunicação:", st.session_state.acquisition_status)
 
-# TODO: handling quando o usuário conecta na porta errada
-# TODO: lidar com quando o usuário dá um F5 na página e a conexão fica ativa
 def connect_serial():
     try:
         # Tentar conectar à porta serial
@@ -125,7 +124,7 @@ with row2[0]:
                 add_script_run_ctx(thread=monitor_thread.thread, ctx=ctx)
                 st.session_state.thread_monitor_serial = monitor_thread
                 monitor_thread.start()
-                update_status()
+                # update_status()
         except serial.SerialException:
             st.error("Falha ao conectar. Verifique a porta serial selecionada.")
     st.markdown("#")
@@ -139,7 +138,7 @@ with row2[1]:
                 st.session_state.acquisition_status = "Finalizado"
                 st.session_state.thread_monitor_serial.pause()
                 st.session_state.thread_monitor_serial.kill()
-                update_status()
+                # update_status()
             else:
                 st.error("Já desconectado. Conecte antes de tentar desconectar novamente.")
         except:
@@ -162,10 +161,10 @@ if st.session_state.connection_status == "Conectado":
                 st.session_state.tempo_sensor = int(tempo)
                 st.session_state.quantidade_sensor = int(quantidade)
                 send_data(st.session_state.serial_port, data_to_send)
-                update_status()
+                # update_status()
             else:
                 st.error("Digite um valor numérico válido. Formato <<tempo,quantidade>>")
 
 
-
+update_status()
 
