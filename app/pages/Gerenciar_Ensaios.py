@@ -105,9 +105,7 @@ with st.container():
             fig = fig.update_layout(showlegend=True)
             st.plotly_chart(fig, theme="streamlit", use_container_width=True)
 
-        #TODO: adicionar as infos do ensaio
         with informacoes:
-            # st.header("A dog")
             for select in selected_rows:
                 st.markdown("-----------------------------")
                 st.markdown("Ensaio: " + select['descricao_tabela'])
@@ -115,6 +113,3 @@ with st.container():
                 st.markdown("Tempo em cada canal: "+ str(select["Tempo"]))
                 st.markdown("Data do ensaio: "+ pd.to_datetime(select["Data de Criação"]).strftime("%d/%m/%Y %H:%M:%S"))
                 st.markdown("Observação: "+select["Observação"])
-
-                # st.text(select['array_valores'])
-            # st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
