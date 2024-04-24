@@ -1,11 +1,12 @@
 from datetime import datetime
+import os
 import pickle
 import sqlite3
 import time
 import streamlit as st
 import numpy as np
 import obsws_python as obs
-from utils.convert_video_data import conersor
+from utils.convert_video_data import conversor
 
 
 st.set_page_config(layout='wide')
@@ -26,15 +27,18 @@ if "status_conexao_obs" not in st.session_state:
     st.session_state.status_conexao_obs = False
 if "observacao" not in st.session_state:
     st.session_state.observacao = "Sem observação"
-
-
+if "connection_status" not in st.session_state:
+    st.session_state.connection_status = None
+if "conexao_obs" not in st.session_state:
+    st.session_state.conexao_obs = None
 
 
 ## conexão db para salvar os dados
 ## banco sqlite armazenado em db/db.sqlite
 def conect_db():
+    base_path = "C:/Users/lmest/Documents/projetos/ultrasoundMultiPlex/app/db/db"
     # conecta com o banco de dados
-    conn = sqlite3.connect("./app/db/db")
+    conn = sqlite3.connect(base_path)
     return conn
 
 def inserir_indice():
@@ -110,24 +114,26 @@ def salvar_dados(path, sinal, observacao):
 
 
 def processa_dados(path):
-    sinal = conersor(path,st.session_state.array_dados_indices,st.session_state.tempo_sensor).convert()
+    sinal = conversor(path,st.session_state.array_dados_indices,st.session_state.tempo_sensor).convert()
     salvar_dados(path, sinal, st.session_state.observacao)
     return path
 
 
-
+#TODO: mudar esse cache resource para retirar isso
 @st.cache_resource
 def conect_obs_socket():
-    cl = obs.ReqClient(host='127.0.0.1', port=4455, password='fKS5qRhjO5O1qtUk', timeout=3)
+    cl = obs.ReqClient(host='127.0.0.1', port=4455, password='NnjPt4byBxA4DLBC', timeout=3)
     # GetVersion, returns a response object
     resp = cl.get_version()
     # Access it's field as an attribute
     print(f"OBS Version: {resp.obs_version}")
     if resp.obs_version:
         st.session_state.status_conexao_obs = True
+        st.session_state.conexao_obs = cl
         return cl
     else:
         st.session_state.status_conexao_obs = False
+        st.session_state.conexao_obs = None
         st.error("Falha no OBS")
         return None
     
@@ -172,7 +178,7 @@ TIMEOUT = 20
 conect_obs_socket()
 
 
-if st.session_state.connection_status == "Conectado" and st.session_state.status_conexao_obs:
+if st.session_state.connection_status == "Conectado" and st.session_state.conexao_obs:
     with row2[0]:
         if st.button("Iniciar Gravação"):
             if not st.session_state.recording:
@@ -181,7 +187,7 @@ if st.session_state.connection_status == "Conectado" and st.session_state.status
                 st.session_state.multiplex_indices_time.append(time.time())
                 aux_multiplex = st.session_state.data_multiplex_received_queue[-1]['valor'] +1 if st.session_state.data_multiplex_received_queue[-1]['valor'] != st.session_state.quantidade_sensor else 1
                 with st.spinner('Lendo dados...'):
-                    time.sleep((st.session_state.tempo_sensor)/1000)
+                    time.sleep(((st.session_state.tempo_sensor)/1000))
                     while time.time() - start_time <= (st.session_state.tempo_sensor/1000)* st.session_state.quantidade_sensor + 1:
                         st.session_state.multiplex_indices_time.append(time.time())
                         if time.time() - start_time > TIMEOUT:
@@ -203,6 +209,8 @@ if st.session_state.connection_status == "Conectado" and st.session_state.status
                         "array_dados": array_dados
                     }
                     st.session_state.array_dados_indices = ob_ind
+                    st.session_state.data_multiplex_received_queue = []
+                    time.sleep(2)
                     processa_dados(path)
 
 
