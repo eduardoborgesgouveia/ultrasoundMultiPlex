@@ -59,6 +59,8 @@ df = df.explode(['Sinal','array_valores'])
 
 # criar uma coluna de identificador chamada "descricao_tabela" contendo o nome do ensaio e o canal
 df['descricao_tabela'] = df['Descrição'] + " - canal: " + df['array_valores'].apply(lambda x: str(x['valor']))
+df['canal'] = df['array_valores'].apply(lambda x: int(x['valor']))
+df.sort_values(by=['Data de Criação','canal'], inplace=True)
 # df.reset_index(inplace=True)
 
 
@@ -67,11 +69,11 @@ df['descricao_tabela'] = df['Descrição'] + " - canal: " + df['array_valores'].
 with st.container():
     st.markdown("# Ensaios #")            
     gb = GridOptionsBuilder.from_dataframe(df[["descricao_tabela", "Data de Criação", "Observação"]])                        
-    gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)            
+    # gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)            
     gb.configure_selection(selection_mode="multiple", use_checkbox=True)
     gridOptions = gb.build()
     # time.sleep(0.5)
-    data = AgGrid(df[['id','descricao_tabela', 'Sinal', 'Data de Criação', 'Observação','Indices_id', 'Tempo', 'Canais','array_valores']],
+    data = AgGrid(df[['id','descricao_tabela','canal', 'Sinal', 'Data de Criação', 'Observação','Indices_id', 'Tempo', 'Canais','array_valores']],
                 gridOptions=gridOptions,
                 enable_enterprise_modules=True,
                 allow_unsafe_jscode=True,
@@ -98,7 +100,7 @@ with st.container():
                 ensaios.append(select['descricao_tabela'])
                 sinais.append(select['Sinal'])
                 legenda.append(select['descricao_tabela'])
-            
+            # TODO: ver os sinais pq estão dando erraod
             group_labels = [ensaios[:][:]]
             fig = make_subplots(rows=1, cols=1)
 

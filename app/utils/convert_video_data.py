@@ -31,15 +31,31 @@ class conversor():
         # success,image = vidcap.read()
         success = True
         i = 0
+        ret = []
         while success and i<max_signals:
             # time.sleep(0.1)
             vidcap.set(cv2.CAP_PROP_POS_FRAMES ,(frame_index + count))    # added this line time in miliseconds
             success,image = vidcap.read()
             print ('Read a new frame: ', success)
             if success:
-                cv2.imwrite( pathOut + "frame" + str(count).zfill(4)+".jpg", image)     # save frame as JPEG file
+                canal_folder =  pathOut + str(indices['array_dados'][i]['valor']) + "\\"
+                if not os.path.exists(canal_folder):
+                    os.makedirs(canal_folder)
+
+                filename =  canal_folder + "frame" + str(count).zfill(4)+".jpg"
+                cv2.imwrite(filename, image)     # save frame as JPEG file
+                ob = {
+                    "frame_index": count,
+                    "path": filename,
+                    "canal": indices['array_dados'][i]['valor']
+                }
+                ret.append(ob)
+
                 count = int(count + (janela_tempo/1000*FRAMES_SEC))
                 i = i + 1
+            
+        return ret
+
 
     def _dataFromImage(self,imagePath):
         img = imageio.imread(imagePath)
@@ -54,8 +70,7 @@ class conversor():
         std = np.std(img)
         for j in range(len(data)):
             for i in range(start, end):
-
-                if (img[i,j,0] > 180 and img[i,j,1] > 180 and img[i,j,2] < 140 ):
+                if (img[i,j,0] > 190 and img[i,j,1] > 190 and img[i,j,2] < 170 ):
                     data_high[j] = i
                     last = i
                     break
@@ -65,7 +80,7 @@ class conversor():
                     break
                     
             for i in range(start, end)[::-1]:
-                if (img[i,j,0] > 180 and img[i,j,1] > 180 and img[i,j,2] < 140 ):
+                if (img[i,j,0] > 190 and img[i,j,1] > 190 and img[i,j,2] < 170 ):
                     data_low[j] = i
                     last = int((last + i)/2)
                     break
@@ -77,7 +92,7 @@ class conversor():
             start = int(last-len(img)/2)
             if start < 0:
                 start = 0
-            end = int(last+len(img)/2)
+            end = int(last+len(img)/2) if last != 0 else len(img)
             if end > len(img):
                 end = len(img)
                         
@@ -85,32 +100,44 @@ class conversor():
             data[j] = len(img)-int(data_high[j]+data_low[j])/2
 
             
-
+        data[0] = data[1] if data[0] == len(img) else data[0]
         for j in range(1, len(data)-1):
             if data[j] == len(img):
                 if data[j] > data[j-1] and data[j] > data[j+1]:
                     data[j] = (data[j-1]+data[j+1])/2
         return data
     
+
     def convert(self):
 
-        self._extractImages(self.path_video, self.path_img, self.indices,self.tempo_sensor)
+        ret = self._extractImages(self.path_video, self.path_img, self.indices,self.tempo_sensor)
         data = []
-        for file in os.listdir(self.path_img):
-            filename = os.fsdecode(file)
-            signal = self._dataFromImage(self.path_img +filename)
-            data.append(signal)
-        
-        data = np.array(data)
-        # mediana = np.zeros(len(data[0,:]))
-        # for ii in range(len(data[0,:])):
-        #     mediana[ii] = statistics.median(data[:,ii])
+        aux_data = []
+        #listar todoas as pastas dentro da pasta pai
+        for folders in os.listdir(self.path_img):
+            # listar todos os arquivos da pasta
+            path = self.path_img + folders
+            aux_ob = {}
+            for file in os.listdir(path):
+                filename = os.fsdecode(file)
+            
+                signal = self._dataFromImage(self.path_img +folders+ "\\" +filename)
+                aux_data.append(signal)
+            
+            #realiza a mediana dos sinais em aux_data e adiciona em data
+            # aux_ob = {
+            #     "sinal": np.median(aux_data, axis=0),
+            #     "canal": folders
+            # }
+            data.append(np.median(aux_data, axis=0))
+            aux_data = []
+
 
         return data
 
 
 if __name__ == "__main__":
-    path_video = "C:/Users/lmest/Videos/2024-04-23 11-31-25.mp4"
-    indices = {'ti': 1713882685.801252, 'tf': 1713882696.801248, 'array_dados': [{'tempo': 1713882685.8560705, 'valor': 7}, {'tempo': 1713882686.98868, 'valor': 8}, {'tempo': 1713882687.9479873, 'valor': 9}, {'tempo': 1713882688.9720693, 'valor': 10}, {'tempo': 1713882689.9643524, 'valor': 1}, {'tempo': 1713882690.9241045, 'valor': 2}, {'tempo': 1713882691.979386, 'valor': 3}, {'tempo': 1713882692.9897125, 'valor': 4}, {'tempo': 1713882693.9341283, 'valor': 5}, {'tempo': 1713882694.9765882, 'valor': 6}, {'tempo': 1713882695.9538465, 'valor': 7}]}
+    path_video = "C:/Users/lmest/Videos/2024-04-24 14-59-38.mp4"
+    indices = {'ti': 1713981578.5903769, 'tf': 1713981589.5911584, 'array_dados': [{'tempo': 1713981579.4068372, 'valor': 6}, {'tempo': 1713981580.4714148, 'valor': 7}, {'tempo': 1713981581.434758, 'valor': 8}, {'tempo': 1713981582.4608655, 'valor': 9}, {'tempo': 1713981583.4720786, 'valor': 10}, {'tempo': 1713981584.4472673, 'valor': 1}, {'tempo': 1713981585.4424858, 'valor': 2}, {'tempo': 1713981586.4539123, 'valor': 3}, {'tempo': 1713981587.454567, 'valor': 4}, {'tempo': 1713981588.433027, 'valor': 5}, {'tempo': 1713981589.428693, 'valor': 6}]}
     
     path = conversor(path_video,indices,1000).convert()

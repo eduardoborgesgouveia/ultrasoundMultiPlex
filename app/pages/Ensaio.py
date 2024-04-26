@@ -41,9 +41,25 @@ def conect_db():
     conn = sqlite3.connect(base_path)
     return conn
 
+def ordenar_e_remover_repetidos(lista_dicts, campo):
+    # Ordena a lista de dicts com base no campo especificado
+    lista_dicts_ordenada = sorted(lista_dicts, key=lambda x: str(x[campo]))
+    
+    # Remove valores repetidos com base no campo especificado
+    lista_final = []
+    valores_vistos = set()
+    for d in lista_dicts_ordenada:
+        if d[campo] not in valores_vistos:
+            lista_final.append(d)
+            valores_vistos.add(d[campo])
+    
+    return lista_final
+
 def inserir_indice():
     # pegar os dados do data_multiplex_received_queue que estejam entre os tempos de inicio e fim do multiplex_indices_time
     ob_ind = st.session_state.array_dados_indices
+    array_dados = ordenar_e_remover_repetidos(ob_ind['array_dados'],"valor")
+    ob_ind['array_dados'] = array_dados
     ob_axu = {
         "parametro_tempo": st.session_state.tempo_sensor,
         "parametro_canais": st.session_state.quantidade_sensor,
