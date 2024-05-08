@@ -14,7 +14,7 @@ class conversor():
     def __init__(self, _path_video,_indices,_tempo_sensor):
         self.path_video = _path_video.replace("/", "\\")
         self.pasta_img = self.path_video.split("\\")[-1].split(".")[0]
-        self.path_img = self.path_video.replace(self.pasta_img+".mp4", "img_"+self.pasta_img) + "\\"
+        self.path_img = self.path_video.replace(self.pasta_img+".mkv", "img_"+self.pasta_img) + "\\"
         self.indices = _indices
         self.tempo_sensor = _tempo_sensor
 

@@ -50,7 +50,7 @@ for row in df.iterrows():
     # verifica o menor array entre sinal e array_valores e diminui o maior para o tamanho do menor
     min_len = min(len(df.at[row[0],'Sinal']), len(df.at[row[0],'array_valores']))
     df.at[row[0],'Sinal'] = df.at[row[0],'Sinal'][:min_len]
-    df.at[row[0],'array_valores'] = df.at[row[0],'array_valores'][:min_len]
+    df.at[row[0],'array_valores'] = df.at[row[0],'array_valores'][:min_len]# if min_len != 0 else [{'tempo':0,'valor':0},{'tempo':0,'valor':0}]
 
     df.at[row[0],'ti'] = pickle.loads(row[1]['array_valores'])['ti']
     df.at[row[0],'tf'] = pickle.loads(row[1]['array_valores'])['tf']

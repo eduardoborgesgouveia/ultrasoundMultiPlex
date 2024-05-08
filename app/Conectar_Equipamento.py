@@ -56,6 +56,12 @@ def monitor_serial():
 
     except:
         print("Erro ao receber dados")
+        st.session_state.serial_port.close()
+        st.session_state.connection_status = "Desconectado"
+        st.session_state.acquisition_status = "Finalizado"
+        st.session_state.thread_monitor_serial.pause()
+        st.session_state.thread_monitor_serial.kill()
+
 
 
 

@@ -135,10 +135,11 @@ def processa_dados(path):
     return path
 
 
-#TODO: mudar esse cache resource para retirar isso
-@st.cache_resource
+
 def conect_obs_socket():
-    cl = obs.ReqClient(host='127.0.0.1', port=4455, password='NnjPt4byBxA4DLBC', timeout=3)
+    if st.session_state.conexao_obs:
+        return st.session_state.conexao_obs
+    cl = obs.ReqClient(host='127.0.0.1', port=4455, password='uYmH3fHVrW175gXD', timeout=3)
     # GetVersion, returns a response object
     resp = cl.get_version()
     # Access it's field as an attribute
