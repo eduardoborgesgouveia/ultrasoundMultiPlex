@@ -14,7 +14,8 @@ class conversor():
     def __init__(self, _path_video,_indices,_tempo_sensor):
         self.path_video = _path_video.replace("/", "\\")
         self.pasta_img = self.path_video.split("\\")[-1].split(".")[0]
-        self.path_img = self.path_video.replace(self.pasta_img+".mkv", "img_"+self.pasta_img) + "\\"
+        self.video_format = self.path_video.split("\\")[-1].split(".")[-1]
+        self.path_img = self.path_video.replace(self.pasta_img+"."+self.video_format, "img_"+self.pasta_img) + "\\"
         self.indices = _indices
         self.tempo_sensor = _tempo_sensor
 
@@ -28,31 +29,37 @@ class conversor():
         frame_index = int(tempo_primeiro_indice * FRAMES_SEC)
         count = 0
         vidcap = cv2.VideoCapture(pathIn)
-        # success,image = vidcap.read()
         success = True
         i = 0
         ret = []
         while success and i<max_signals:
             # time.sleep(0.1)
-            vidcap.set(cv2.CAP_PROP_POS_FRAMES ,(frame_index + count))    # added this line time in miliseconds
-            success,image = vidcap.read()
-            print ('Read a new frame: ', success)
-            if success:
-                canal_folder =  pathOut + str(indices['array_dados'][i]['valor']) + "\\"
-                if not os.path.exists(canal_folder):
-                    os.makedirs(canal_folder)
+            vidcap.set(cv2.CAP_PROP_POS_FRAMES ,(frame_index + count))   
+            FRAME_NUMBER_MEDIAN = 3
+            STEP_MEDIAN = ((FRAMES_SEC/(janela_tempo/1000))/FRAME_NUMBER_MEDIAN)-3
+            # get 3 frames before the next frame_index+count
+            for j in range(FRAME_NUMBER_MEDIAN):
 
-                filename =  canal_folder + "frame" + str(count).zfill(4)+".jpg"
-                cv2.imwrite(filename, image)     # save frame as JPEG file
-                ob = {
-                    "frame_index": count,
-                    "path": filename,
-                    "canal": indices['array_dados'][i]['valor']
-                }
-                ret.append(ob)
+                success,image = vidcap.read()
+                print ('Read a new frame: ', success)
+                print("Frame atual vídeo: ", vidcap.get(cv2.CAP_PROP_POS_FRAMES)) 
+                if success:
+                    canal_folder =  pathOut + str(indices['array_dados'][i]['valor']) + "\\"
+                    if not os.path.exists(canal_folder):
+                        os.makedirs(canal_folder)
 
-                count = int(count + (janela_tempo/1000*FRAMES_SEC))
-                i = i + 1
+                    filename =  canal_folder + "frame" + str(count+j).zfill(4)+".jpg"
+                    cv2.imwrite(filename, image)     # save frame as JPEG file
+                    ob = {
+                        "frame_index": count+j,
+                        "path": filename,
+                        "canal": indices['array_dados'][i]['valor']
+                    }
+                    ret.append(ob)
+                vidcap.set(cv2.CAP_PROP_POS_FRAMES ,(frame_index + count + ((j+1) * STEP_MEDIAN)))    # added this line time in miliseconds
+
+            count = int(count + (janela_tempo/1000*FRAMES_SEC))
+            i = i + 1
             
         return ret
 
@@ -74,7 +81,7 @@ class conversor():
                     data_high[j] = i
                     last = i
                     break
-                elif (img[i,j,0] > 120 and img[i,j,1] > 120 and img[i,j,2] < 90 ):
+                elif (img[i,j,0] > 100 and img[i,j,1] > 100 and img[i,j,2] < 80 ):
                     data_high[j] = i
                     last = i
                     break
@@ -84,7 +91,7 @@ class conversor():
                     data_low[j] = i
                     last = int((last + i)/2)
                     break
-                elif (img[i,j,0] > 120 and img[i,j,1] > 120 and img[i,j,2] < 90 ):
+                elif (img[i,j,0] > 100 and img[i,j,1] > 100 and img[i,j,2] < 80 ):
                     data_low[j] = i
                     last = int((last + i)/2)
                     break
@@ -137,7 +144,7 @@ class conversor():
 
 
 if __name__ == "__main__":
-    path_video = "C:/Users/lmest/Videos/2024-04-24 14-59-38.mp4"
+    path_video = "C:/Users/lmest/Videos/teste_frames.mp4"
     indices = {'ti': 1713981578.5903769, 'tf': 1713981589.5911584, 'array_dados': [{'tempo': 1713981579.4068372, 'valor': 6}, {'tempo': 1713981580.4714148, 'valor': 7}, {'tempo': 1713981581.434758, 'valor': 8}, {'tempo': 1713981582.4608655, 'valor': 9}, {'tempo': 1713981583.4720786, 'valor': 10}, {'tempo': 1713981584.4472673, 'valor': 1}, {'tempo': 1713981585.4424858, 'valor': 2}, {'tempo': 1713981586.4539123, 'valor': 3}, {'tempo': 1713981587.454567, 'valor': 4}, {'tempo': 1713981588.433027, 'valor': 5}, {'tempo': 1713981589.428693, 'valor': 6}]}
     
     path = conversor(path_video,indices,1000).convert()
